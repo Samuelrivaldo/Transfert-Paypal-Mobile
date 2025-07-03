@@ -1,0 +1,11 @@
+🔐 Prérequis :
+Avoir une API de Mobile Money fonctionnelle (ex : MTN MoMo).
+
+Un token d’accès OAuth valide pour la MoMo API.
+
+Un système backend sécurisé (PHP, Node.js ou Python recommandé).
+
+Un compte entreprise PayPal ou Hyperwallet.
+
+
+https://sandbox.momodeveloper.mtn.com/v1_0/apiuser
