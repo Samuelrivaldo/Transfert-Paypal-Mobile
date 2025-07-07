@@ -14,8 +14,8 @@ try {
     // Créer un paiement PayPal
     $payment = createPaypalPayment(
         $amount,
-        "http://localhost:3000/transfert_paypal_momo/execute-payment.php?msisdn=" . urlencode($msisdn),
-        "http://localhost:3000/transfert_paypal_momo/cancel.php"
+        "execute-payment.php?msisdn=" . urlencode($msisdn),
+        "transfert_paypal_momo/cancel.php"
     );
 
     // Rediriger vers PayPal pour paiement
