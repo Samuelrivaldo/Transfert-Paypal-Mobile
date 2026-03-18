@@ -1,0 +1,11 @@
+# Environment files
+.env
+.env.local
+.env.*.local
+storage/app.sqlite
+storage/*.log
+*.log
+.vscode/
+.idea/
+node_modules/
+composer.lock
