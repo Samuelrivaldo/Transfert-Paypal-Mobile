@@ -1,13 +1,33 @@
 <?php
-header("Content-Security-Policy: default-src 'self' https://*.paypal.com https://*.paypalobjects.com https://*.ngrok.io; script-src 'self' 'unsafe-inline' https://*.paypal.com https://*.paypalobjects.com; connect-src 'self' https://*.paypal.com https://*.paypalobjects.com https://*.ngrok.io; img-src 'self' data: https://*.paypal.com https://*.paypalobjects.com;");
 
-require 'functions.php';
+declare(strict_types=1);
 
-$paymentId = $_GET['paymentId'] ?? null;
-$payerId = $_GET['PayerID'] ?? null;
-$msisdn = $_GET['msisdn'] ?? null;
+require_once __DIR__ . '/functions.php';
+require_once __DIR__ . '/db.php';
 
-if (!$paymentId || !$payerId || !$msisdn) {
+$state = $_GET['state'] ?? '';
+$orderId = $_GET['token'] ?? '';
+
+if ($state === '' || $orderId === '') {
+    http_response_code(400);
+    exit('Donnees manquantes pour finaliser le paiement.');
+}
+
+$transfer = getTransferByState($state);
+if ($transfer === null) {
+    http_response_code(404);
+    exit('Transaction introuvable.');
+}
+
+if (($transfer['status'] ?? '') !== 'pending_paypal') {
+    http_response_code(409);
+    exit('Cette transaction a deja ete traitee.');
+}
+
+if (($transfer['paypal_order_id'] ?? '') !== $orderId) {
+    markTransferFailed($state, 'PayPal order mismatch.');
+    http_response_code(400);
+    exit('Incoherence de commande PayPal.');
     die("Données manquantes pour finaliser le paiement");
 }
 

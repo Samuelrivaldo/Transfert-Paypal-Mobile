@@ -4,67 +4,397 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Paiement PayPal vers MTN MoMo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet" />
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 400px;
-            margin: 40px auto;
-            padding: 20px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
+        :root {
+            --bg-1: #f6fbff;
+            --bg-2: #e7f9f5;
+            --ink: #132238;
+            --muted: #49607d;
+            --brand: #0070ba;
+            --brand-deep: #005892;
+            --accent: #00a37a;
+            --card: #ffffff;
+            --border: #d8e6f5;
+            --danger: #c93535;
+            --ok: #0d8a53;
+            --shadow: 0 18px 50px rgba(19, 34, 56, 0.12);
         }
-        h1 {
-            text-align: center;
-            color: #0070ba;
-        }
-        label {
-            display: block;
-            margin-top: 20px;
-        }
-        input[type="text"],
-        input[type="number"] {
-            width: 100%;
-            padding: 8px;
-            margin-top: 5px;
+
+        * {
             box-sizing: border-box;
-            border-radius: 4px;
-            border: 1px solid #ccc;
         }
-        button {
-            margin-top: 30px;
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Manrope", "Segoe UI", sans-serif;
+            color: var(--ink);
+            background:
+                radial-gradient(50rem 30rem at -10% -20%, #bde7ff 0%, transparent 60%),
+                radial-gradient(40rem 30rem at 120% 0%, #bcf4de 0%, transparent 60%),
+                linear-gradient(140deg, var(--bg-1), var(--bg-2));
+            display: grid;
+            place-items: center;
+            padding: 24px;
+        }
+
+        .orb {
+            position: fixed;
+            width: 240px;
+            height: 240px;
+            border-radius: 999px;
+            pointer-events: none;
+            filter: blur(2px);
+            opacity: 0.45;
+            animation: drift 12s ease-in-out infinite alternate;
+        }
+
+        .orb-a {
+            top: 8%;
+            left: 5%;
+            background: #7cc7ff;
+        }
+
+        .orb-b {
+            bottom: 8%;
+            right: 5%;
+            background: #82e2bf;
+            animation-delay: 1.2s;
+        }
+
+        @keyframes drift {
+            from { transform: translateY(0px) translateX(0px); }
+            to { transform: translateY(-18px) translateX(10px); }
+        }
+
+        .shell {
+            width: min(980px, 100%);
+            display: grid;
+            gap: 20px;
+            grid-template-columns: 1.1fr 1fr;
+            align-items: start;
+        }
+
+        .panel {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            padding: 28px;
+            transform: translateY(16px);
+            opacity: 0;
+            animation: reveal 560ms ease forwards;
+        }
+
+        .panel:nth-child(2) {
+            animation-delay: 90ms;
+        }
+
+        @keyframes reveal {
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .hero h1 {
+            font-family: "Space Grotesk", sans-serif;
+            margin: 0 0 12px;
+            font-size: clamp(1.75rem, 1.4rem + 1.1vw, 2.3rem);
+            line-height: 1.12;
+            letter-spacing: -0.02em;
+        }
+
+        .hero p {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.55;
+        }
+
+        .chips {
+            margin-top: 18px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .chip {
+            padding: 8px 12px;
+            border-radius: 999px;
+            border: 1px solid #c8def3;
+            background: #f4faff;
+            font-size: 0.83rem;
+            color: #254260;
+            font-weight: 600;
+        }
+
+        .steps {
+            margin: 20px 0 0;
+            padding: 0;
+            list-style: none;
+            display: grid;
+            gap: 12px;
+        }
+
+        .steps li {
+            display: grid;
+            grid-template-columns: 28px 1fr;
+            gap: 10px;
+            align-items: start;
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+
+        .steps li span {
+            width: 28px;
+            height: 28px;
+            border-radius: 999px;
+            display: grid;
+            place-items: center;
+            background: #edf6ff;
+            border: 1px solid #c7e2fb;
+            color: var(--brand-deep);
+            font-weight: 700;
+            font-size: 0.82rem;
+        }
+
+        .form-title {
+            margin: 0 0 16px;
+            font-family: "Space Grotesk", sans-serif;
+            font-size: 1.25rem;
+            letter-spacing: -0.01em;
+        }
+
+        .field {
+            margin-bottom: 14px;
+        }
+
+        .field label {
+            display: block;
+            margin-bottom: 7px;
+            font-size: 0.9rem;
+            color: #304966;
+            font-weight: 600;
+        }
+
+        .field input {
             width: 100%;
-            background-color: #0070ba;
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: 4px;
-            font-size: 16px;
+            border: 1px solid #cddff2;
+            background: #fbfdff;
+            border-radius: 12px;
+            padding: 13px 14px;
+            font: inherit;
+            color: var(--ink);
+            transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
+        }
+
+        .field input:focus {
+            outline: none;
+            border-color: #6bb5ea;
+            background: #fff;
+            box-shadow: 0 0 0 4px rgba(0, 112, 186, 0.12);
+        }
+
+        .hint {
+            font-size: 0.8rem;
+            color: #5a728d;
+            margin-top: 6px;
+            min-height: 1.1em;
+        }
+
+        .hint.error {
+            color: var(--danger);
+        }
+
+        .hint.success {
+            color: var(--ok);
+        }
+
+        .summary {
+            margin: 14px 0 16px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px dashed #b9d7f0;
+            background: #f5fbff;
+            font-size: 0.9rem;
+            color: #2a4868;
+        }
+
+        .pay-btn {
+            margin-top: 6px;
+            width: 100%;
+            border: 0;
+            border-radius: 12px;
+            padding: 14px 16px;
+            background: linear-gradient(140deg, var(--brand), var(--brand-deep));
+            color: #fff;
+            font-family: "Space Grotesk", sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: 0.01em;
             cursor: pointer;
+            transition: transform .15s ease, filter .2s ease, box-shadow .2s ease;
+            box-shadow: 0 10px 20px rgba(0, 88, 146, 0.3);
         }
-        button:hover {
-            background-color: #005a9c;
+
+        .pay-btn:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.02);
         }
-        .note {
-            margin-top: 15px;
-            font-size: 0.9em;
-            color: #555;
+
+        .pay-btn:active {
+            transform: translateY(0);
+        }
+
+        .pay-btn:disabled {
+            opacity: 0.75;
+            cursor: progress;
+        }
+
+        .loader {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.35);
+            border-top-color: #fff;
+            display: inline-block;
+            margin-left: 8px;
+            vertical-align: -2px;
+            animation: spin .7s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .trust {
+            margin-top: 12px;
+            text-align: center;
+            color: #4f6784;
+            font-size: 0.82rem;
+        }
+
+        @media (max-width: 860px) {
+            .shell {
+                grid-template-columns: 1fr;
+                max-width: 560px;
+            }
         }
     </style>
 </head>
 <body>
-    <h1>Paiement PayPal → MTN MoMo</h1>
-    <form action="payment.php" method="POST" id="paymentForm">
-        <label for="amount">Montant à payer (€):</label>
-        <input type="number" id="amount" name="amount" min="0.1" step="0.01" required />
+    <div class="orb orb-a"></div>
+    <div class="orb orb-b"></div>
 
-        <label for="msisdn">Numéro MTN MoMo (ex: 22961234567):</label>
-        <input type="text" id="msisdn" name="msisdn" pattern="229[0-9]{8}" placeholder="22961234567" required />
+    <main class="shell">
+        <section class="panel hero">
+            <h1>Paiement instantane vers MTN MoMo</h1>
+            <p>
+                Lancez un paiement securise via PayPal, puis enchainez automatiquement
+                avec la demande MTN MoMo selon la configuration serveur.
+            </p>
 
-        <button type="submit">Payer avec PayPal</button>
-    </form>
-    <p class="note">
-        Remarque : Le paiement se fait d'abord via PayPal.<br />
-        Après validation, l'argent sera transféré automatiquement sur le numéro MTN MoMo indiqué.
-    </p>
+            <div class="chips">
+                <span class="chip">HTTPS actif</span>
+                <span class="chip">Validation serveur</span>
+                <span class="chip">Suivi transaction</span>
+            </div>
+
+            <ol class="steps">
+                <li><span>1</span><div>Vous saisissez le montant et le numero MTN.</div></li>
+                <li><span>2</span><div>Validation et redirection vers PayPal.</div></li>
+                <li><span>3</span><div>Au retour, la transaction MTN est declenchee.</div></li>
+            </ol>
+        </section>
+
+        <section class="panel">
+            <h2 class="form-title">Demarrer un paiement</h2>
+            <form action="payment.php" method="POST" id="paymentForm" novalidate>
+                <div class="field">
+                    <label for="amount">Montant (EUR)</label>
+                    <input type="number" id="amount" name="amount" min="0.10" step="0.01" placeholder="25.00" required />
+                    <div id="amountHint" class="hint"></div>
+                </div>
+
+                <div class="field">
+                    <label for="msisdn">Numero MTN MoMo (Benin)</label>
+                    <input type="text" id="msisdn" name="msisdn" inputmode="numeric" autocomplete="tel" placeholder="22961234567" pattern="229[0-9]{8}" required />
+                    <div id="msisdnHint" class="hint">Format attendu: 229XXXXXXXX</div>
+                </div>
+
+                <div class="summary" id="summary">
+                    Vous allez payer <strong>0.00 EUR</strong> vers <strong>229XXXXXXXX</strong>.
+                </div>
+
+                <button type="submit" class="pay-btn" id="payBtn">Continuer avec PayPal</button>
+            </form>
+            <div class="trust">Transaction traitee sur des API officielles PayPal et MTN.</div>
+        </section>
+    </main>
+
+    <script>
+        (function () {
+            var form = document.getElementById("paymentForm");
+            var amount = document.getElementById("amount");
+            var msisdn = document.getElementById("msisdn");
+            var amountHint = document.getElementById("amountHint");
+            var msisdnHint = document.getElementById("msisdnHint");
+            var summary = document.getElementById("summary");
+            var payBtn = document.getElementById("payBtn");
+
+            function normalizePhone(raw) {
+                var digits = (raw || "").replace(/\D/g, "");
+                if (/^\d{8}$/.test(digits)) return "229" + digits;
+                if (/^0\d{8}$/.test(digits)) return "229" + digits.slice(1);
+                return digits;
+            }
+
+            function render() {
+                var value = parseFloat(amount.value || "0");
+                var safeValue = isFinite(value) && value > 0 ? value : 0;
+                var normalized = normalizePhone(msisdn.value);
+
+                summary.innerHTML = "Vous allez payer <strong>" + safeValue.toFixed(2) + " EUR</strong> vers <strong>" +
+                    (normalized || "229XXXXXXXX") + "</strong>.";
+
+                if (amount.value && safeValue <= 0) {
+                    amountHint.className = "hint error";
+                    amountHint.textContent = "Le montant doit etre superieur a 0.";
+                } else if (safeValue > 0) {
+                    amountHint.className = "hint success";
+                    amountHint.textContent = "Montant valide.";
+                } else {
+                    amountHint.className = "hint";
+                    amountHint.textContent = "";
+                }
+
+                if (!msisdn.value) {
+                    msisdnHint.className = "hint";
+                    msisdnHint.textContent = "Format attendu: 229XXXXXXXX";
+                    return;
+                }
+
+                if (/^229\d{8}$/.test(normalized)) {
+                    msisdnHint.className = "hint success";
+                    msisdnHint.textContent = "Numero valide. Il sera envoye en " + normalized + ".";
+                } else {
+                    msisdnHint.className = "hint error";
+                    msisdnHint.textContent = "Numero invalide. Utilisez 229 suivi de 8 chiffres.";
+                }
+            }
+
+            amount.addEventListener("input", render);
+            msisdn.addEventListener("input", render);
+            render();
+
+            form.addEventListener("submit", function () {
+                payBtn.disabled = true;
+                payBtn.innerHTML = "Redirection vers PayPal <span class='loader'></span>";
+            });
+        })();
+    </script>
 </body>
 </html>

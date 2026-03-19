@@ -1,23 +1,36 @@
 <?php
-header("Content-Security-Policy: default-src 'self' https://*.paypal.com https://*.paypalobjects.com https://*.ngrok.io; script-src 'self' 'unsafe-inline' https://*.paypal.com https://*.paypalobjects.com; connect-src 'self' https://*.paypal.com https://*.paypalobjects.com https://*.ngrok.io; img-src 'self' data: https://*.paypal.com https://*.paypalobjects.com;");
 
-require 'vendor/autoload.php';
-require 'config.php';
+declare(strict_types=1);
 
-use PayPal\Api\Amount;
-use PayPal\Api\Payer;
-use PayPal\Api\Payment;
-use PayPal\Api\PaymentExecution;
-use PayPal\Api\RedirectUrls;
-use PayPal\Api\Transaction;
-use PayPal\Rest\ApiContext;
-use PayPal\Auth\OAuthTokenCredential;
+header("Content-Security-Policy: default-src 'self' https://*.paypal.com https://*.paypalobjects.com; script-src 'self' 'unsafe-inline' https://*.paypal.com https://*.paypalobjects.com; connect-src 'self' https://*.paypal.com https://*.paypalobjects.com; img-src 'self' data: https://*.paypal.com https://*.paypalobjects.com;");
 
-// HTTP cURL général
-function http($url, $headers, $method = 'GET', $body = '')
+require_once __DIR__ . '/config.php';
+
+function http(string $url, array $headers, string $method = 'GET', ?string $body = null): array
 {
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+
+    if (defined('CURL_CA_BUNDLE_PATH') && CURL_CA_BUNDLE_PATH !== '' && is_file(CURL_CA_BUNDLE_PATH)) {
+        curl_setopt($ch, CURLOPT_CAINFO, CURL_CA_BUNDLE_PATH);
+    }
+
+    if ($method !== 'GET') {
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
+        if ($body !== null) {
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
+        }
+    }
+
+    $resp = curl_exec($ch);
+    $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $err = curl_error($ch);
+    curl_close($ch);
+
+    return [$code, (string) $resp, $err];
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // à sécuriser en prod
     if ($method !== 'GET') {

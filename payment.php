@@ -1,13 +1,47 @@
 <?php
-header("Content-Security-Policy: default-src 'self' https://*.paypal.com https://*.paypalobjects.com https://*.ngrok.io; script-src 'self' 'unsafe-inline' https://*.paypal.com https://*.paypalobjects.com; connect-src 'self' https://*.paypal.com https://*.paypalobjects.com https://*.ngrok.io; img-src 'self' data: https://*.paypal.com https://*.paypalobjects.com;");
 
-require 'functions.php';
+declare(strict_types=1);
 
-$amount = $_POST['amount'] ?? null;
-$msisdn = $_POST['msisdn'] ?? null;
+require_once __DIR__ . '/functions.php';
+require_once __DIR__ . '/db.php';
 
-if (!$amount || !$msisdn) {
-    die("Montant ou numéro MoMo manquant");
+function normalizeMsisdn(string $raw): string
+{
+    $digits = preg_replace('/\D+/', '', $raw) ?? '';
+
+    if (preg_match('/^\d{8}$/', $digits)) {
+        return '229' . $digits;
+    }
+
+    if (preg_match('/^0\d{8}$/', $digits)) {
+        return '229' . substr($digits, 1);
+    }
+
+    if (preg_match('/^229\d{8}$/', $digits)) {
+        return $digits;
+    }
+
+    return $digits;
+}
+
+$amountRaw = $_POST['amount'] ?? '';
+$msisdnRaw = $_POST['msisdn'] ?? '';
+
+if (!is_numeric($amountRaw)) {
+    http_response_code(400);
+    exit('Montant invalide.');
+}
+
+$amount = number_format((float) $amountRaw, 2, '.', '');
+if ((float) $amount <= 0.0) {
+    http_response_code(400);
+    exit('Le montant doit etre superieur a 0.');
+}
+
+$msisdn = normalizeMsisdn($msisdnRaw);
+if (!preg_match('/^229\d{8}$/', $msisdn)) {
+    http_response_code(400);
+    exit('Numero MTN invalide. Format attendu: 229XXXXXXXX.');
 }
 
 try {

@@ -9,3 +9,7 @@ storage/*.log
 .idea/
 node_modules/
 composer.lock
+vendor/
+.DS_Store
+Thumbs.db
+*.cache

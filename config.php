@@ -1,52 +1,106 @@
 <?php
+
 declare(strict_types=1);
 
-/**
- * Application Configuration
- * Loads environment variables from .env file
- */
+function loadDotEnv(string $path, bool $overrideExisting = false): void
+{
+    if (!is_file($path)) {
+        return;
+    }
 
-// Load from .env.local first, then .env
-$envFile = __DIR__ . '/.env.local';
-if (!file_exists($envFile)) {
-    $envFile = __DIR__ . '/.env';
-}
+    $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    if ($lines === false) {
+        return;
+    }
 
-if (file_exists($envFile)) {
-    $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     foreach ($lines as $line) {
-        if (strpos($line, '#') === 0 || strpos(trim($line), '=') === false) {
+        $line = trim($line);
+        if ($line === '' || str_starts_with($line, '#')) {
             continue;
         }
-        [$key, $value] = explode('=', $line, 2);
-        $key = trim($key);
-        $value = trim($value, ' "'"'"'');
-        if (!isset($_ENV[$key]) && !isset($_SERVER[$key])) {
-            putenv("$key=$value");
+
+        $parts = explode('=', $line, 2);
+        if (count($parts) !== 2) {
+            continue;
+        }
+
+        $name = trim($parts[0]);
+        $value = trim($parts[1]);
+
+        if ($name === '') {
+            continue;
+        }
+
+        if (
+            (str_starts_with($value, '"') && str_ends_with($value, '"')) ||
+            (str_starts_with($value, "'") && str_ends_with($value, "'"))
+        ) {
+            $value = substr($value, 1, -1);
+        }
+
+        if ($overrideExisting || getenv($name) === false) {
+            putenv("{$name}={$value}");
+            $_ENV[$name] = $value;
+            $_SERVER[$name] = $value;
         }
     }
 }
 
-// Helper function to get env var with default
-function envWithDefault(string $key, string $default = ''): string {
-    return $_ENV[$key] ?? $_SERVER[$key] ?? getenv($key) ?: $default;
+function envRequired(string $key): string
+{
+    $value = getenv($key);
+    if ($value === false || trim($value) === '') {
+        throw new RuntimeException(
+            "Missing required environment variable: {$key}. ".
+            "Create .env from .env.example and set a non-empty value."
+        );
+    }
+
+    return trim($value);
 }
 
-// Application Configuration
-define('APP_URL', envWithDefault('APP_URL', 'http://localhost:8080/transfert_paypal_momo'));
-define('APP_DEBUG', (int) envWithDefault('APP_DEBUG', '0') === 1);
+function envWithDefault(string $key, string $default): string
+{
+    $value = getenv($key);
+    if ($value === false || trim($value) === '') {
+        return $default;
+    }
 
-// PayPal Configuration
-define('PAYPAL_CLIENT_ID', envWithDefault('PAYPAL_CLIENT_ID', ''));
-define('PAYPAL_CLIENT_SECRET', envWithDefault('PAYPAL_CLIENT_SECRET', ''));
-define('PAYPAL_MODE', envWithDefault('PAYPAL_MODE', 'sandbox'));
+    return trim($value);
+}
 
-// MTN Configuration
-define('MTN_SUBSCRIPTION_KEY', envWithDefault('MTN_SUBSCRIPTION_KEY', ''));
-define('MTN_API_USER_ID', envWithDefault('MTN_API_USER_ID', ''));
-define('MTN_API_KEY', envWithDefault('MTN_API_KEY', ''));
-define('MTN_ENV', envWithDefault('MTN_ENV', 'sandbox'));
-define('MTN_FLOW', envWithDefault('MTN_FLOW', 'collection'));
+$certPath = __DIR__ . DIRECTORY_SEPARATOR . 'cacert.pem';
+if (!is_file($certPath)) {
+    $certPath = '';
+}
+
+loadDotEnv(__DIR__ . '/.env', true);
+loadDotEnv(__DIR__ . '/.env.example', false);
+
+define('APP_URL', rtrim(envWithDefault('APP_URL', ''), '/'));
+define('APP_DEBUG', in_array(strtolower(envWithDefault('APP_DEBUG', '0')), ['1', 'true', 'yes'], true));
+define('CURL_CA_BUNDLE_PATH', envWithDefault('CURL_CA_BUNDLE_PATH', $certPath));
+
+// PayPal config (Checkout v2 REST API)
+define('PAYPAL_CLIENT_ID', envRequired('PAYPAL_CLIENT_ID'));
+define('PAYPAL_CLIENT_SECRET', envRequired('PAYPAL_CLIENT_SECRET'));
+define('PAYPAL_MODE', strtolower(envWithDefault('PAYPAL_MODE', 'sandbox')));
+define(
+    'PAYPAL_API_BASE',
+    PAYPAL_MODE === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com'
+);
+
+// MTN MoMo config
+define('MTN_SUBSCRIPTION_KEY', envRequired('MTN_SUBSCRIPTION_KEY'));
+define('MTN_API_USER_ID', envRequired('MTN_API_USER_ID'));
+define('MTN_API_KEY', envRequired('MTN_API_KEY'));
+define('MTN_ENV', strtolower(envWithDefault('MTN_ENV', 'sandbox'))); // production|sandbox
+define('MTN_FLOW', strtolower(envWithDefault('MTN_FLOW', 'collection'))); // collection|disbursement
+
+define(
+    'MTN_COLLECTION_BASE',
+    MTN_ENV === 'production' ? 'https://momodeveloper.mtn.com' : 'https://sandbox.momodeveloper.mtn.com'
+);
 
 // Security: Enforce HTTPS in production
 if (PAYPAL_MODE === 'live' && !str_starts_with(APP_URL, 'https://')) {
@@ -55,35 +109,9 @@ if (PAYPAL_MODE === 'live' && !str_starts_with(APP_URL, 'https://')) {
     );
 }
 
-// Development mode warning
-if (APP_DEBUG && PAYPAL_MODE === 'live') {
-    error_log('WARNING: APP_DEBUG is enabled in live mode. This may expose sensitive information.');
-}
-
-// Validate required credentials
-$requiredEnvVars = [
-    'PAYPAL_CLIENT_ID',
-    'PAYPAL_CLIENT_SECRET',
-    'MTN_SUBSCRIPTION_KEY',
-    'MTN_API_USER_ID',
-    'MTN_API_KEY',
-];
-
-foreach ($requiredEnvVars as $var) {
-    if (empty($GLOBALS[strtolower($var)] ?? constant($var))) {
-        throw new RuntimeException("Required environment variable missing: $var");
-    }
-}
-
-// SSL Certificate Path (optional)
-$curlCaPath = envWithDefault('CURL_CA_BUNDLE_PATH', '');
-if ($curlCaPath && file_exists($curlCaPath)) {
-    define('CURL_CA_BUNDLE', $curlCaPath);
-}
-
 // Rate limiting configuration
 define('RATE_LIMIT_WINDOW', 300);
 define('RATE_LIMIT_ATTEMPTS', 10);
-
-// Transaction timeout
 define('TRANSACTION_TIMEOUT', 3600);
+
+?>
